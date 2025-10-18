@@ -76,6 +76,4 @@ This file handles all interactions with SQLite.
 
 ---
 
-This app demonstrates a clean way to combine Flutter’s UI features with a persistent local database using SQLite.
 
----
