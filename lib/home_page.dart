@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'db/tasks_database.dart';
 import 'model/task.dart';
+import 'finished_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -42,8 +43,16 @@ class _HomePageState extends State<HomePage> {
     final updatedTask = task.copy(isFinished: isChecked);
     await _tasksDatabase.update(updatedTask);
     setState(() {
-      _tasks[index] = updatedTask;
+      _tasks.removeAt(index);
     });
+    if (isChecked && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task is finished.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteTask(int index) async {
@@ -79,7 +88,20 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('TO-DO List'),
+        foregroundColor: Colors.white,
         backgroundColor: Colors.blue,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_forward, color: Colors.white),
+
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FinishedPage()),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
@@ -114,46 +136,64 @@ class _HomePageState extends State<HomePage> {
         child: const Icon(Icons.add),
       ),
       body: _tasks.isEmpty
-          ? const Center(child: Text('No tasks yet'))
+          ? const Center(
+              child: Text('No tasks yet, click + to add a new task.'),
+            )
           : ListView.builder(
               itemCount: _tasks.length,
               itemBuilder: (context, index) {
                 final task = _tasks[index];
-                return InkWell(
-                  onLongPress: () => _deleteTask(index),
-                  child: Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              task.isFinished
-                                  ? '${task.description} (Done)'
-                                  : task.description,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: task.isFinished
-                                    ? Colors.red
-                                    : Colors.black,
-                              ),
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Checkbox(
+                          value: task.isFinished,
+                          onChanged: (value) {
+                            if (value != null) {
+                              _updateTask(task, index, value);
+                            }
+                          },
+                        ),
+
+                        Expanded(
+                          child: Text(
+                            task.description,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
                           ),
-                          Checkbox(
-                            value: task.isFinished,
-                            onChanged: (value) {
-                              if (value != null) {
-                                _updateTask(task, index, value);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                        ),
+
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          onSelected: (value) {
+                            if (value == 'delete') {
+                              _deleteTask(index);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text('Delete'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 );
